@@ -1,0 +1,5 @@
+{
+    cmdlines = {
+        "xmake lua /root/.local/share/xmake/modules/private/utils/statistics.lua"
+    }
+}

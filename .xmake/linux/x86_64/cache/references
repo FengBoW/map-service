@@ -1,0 +1,5 @@
+{
+    packages = {
+        "/root/.xmake/packages/g/gtest/v1.12.1/77b9096bc4b34d9282f672d36b015ba9"
+    }
+}

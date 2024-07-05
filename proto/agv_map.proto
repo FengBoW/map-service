@@ -1,0 +1,418 @@
+syntax = "proto3";
+
+//详细参考文档,agv_map_proto_xxxx.xls
+
+package agv_map;
+
+
+message MAP_ARR{
+	repeated Map map 	 		= 1;
+	Describe describe 			= 2;
+	map<int32,Store_offset> 	store_off_config = 3;
+	map<string,AgvParam>  		agvparam	= 4;
+	map<int32,ReplaceBatteryStation> replace_battery_station =5;
+	map<int32,Pallet>           pallet  =6;		  //托盘类型
+	map<string,DefautForkSet>	default_frok = 7; //<车类型，货叉默认配置>
+}
+
+//agv 地图数据
+message Map{
+	Conf 						conf 	= 1;
+	map<int32,Node> 			node    = 2;
+	map<int32,Segment> 			segment	= 3;
+	map<int32,Area>				area    = 4;
+	map<int32,Label> 			label   = 5;
+}
+
+//基本设定
+message Conf{
+	int64  map_ts       	= 1;    
+    int32  map_zone     	= 2;
+    string map_name 		= 3;
+    int32  max_x 			= 4;
+    int32  min_x 			= 5;
+    int32  max_y 			= 6;
+    int32  min_y 			= 7;
+	string project_name     = 8;
+	map<int32, int32> agv_ids 	= 9;
+	string gcood_type       = 10;     // XY
+	int32  gcood_dm_value   = 11;     // 0:DM14     1:DM16
+	int32  background_pos_x = 12;     //背景图位置坐标x
+	int32  background_pos_y = 13;     //背景图位置坐标y
+	int32  background_length = 14;    //背景图的长
+	int32  background_width  = 15;    //背景图的宽
+
+	repeated param mission_type_list = 16; //业务参数配置，如key配置A, value配置A的中文描述
+	message param{
+		string key = 1; //参数名称 （业务类型名称）
+		string value = 2;//参数值	（中文描述）
+	}
+}
+	
+//场景数据
+message sceneData{
+
+	map<string,data> param_map = 1;//(group,参数数据)
+	
+	message data{
+		map<string,string> param_map = 1; //<参数名称，参数值>
+		map<string,string> index_map = 2;//(模板Index,模板实例化index)
+	}
+}
+
+//点
+message Node{
+	Basic basic 		 	= 1;
+	repeated int32 in_area 		= 2;
+	repeated int32 edge_list 	= 3; //新增： Node连接的edge的列表
+	sceneData  agv_param 		= 4;
+	sceneData  avo_param 		= 5;
+	sceneData  ctl_param 		= 6;
+	sceneData  rut_param 		= 7;
+	sceneData  act_param 		= 8;	
+	Sim_param  sim_param 		= 9;
+
+	message Basic{
+		int32 	id 					= 1;  
+		string 	name 				= 2; //wcs库位名称
+		int32 	type 				= 3;  //站点类型
+		Coord   coord       		= 4; //坐标
+	    int32   group_id    		= 5; //分组id  TBD
+		sint32 	QRcode 				= 6; //二维码编号
+		int32 	node_info			= 7; //基础属性 bit0-可暂驻,bit1-可充电, bit2-可切自动。
+		sint32  floor 				= 8; 
+		map<string,string> agv_type = 9;
+		string qrcode_str           = 10; //二维码编号
+		int32   stype               = 11;  //新定义：货架配置，旧定义：库位类型；由于兼容性原因，变量名称暂时不变，含义变化；从货架配置中选择
+		string	mission_type		= 12; //业务类型，从Config中的mission_type_list选择
+		int32 	instapnt_id    		= 13; //入库点id
+		int32   pallet_dir			= 14; //容器方向，1: 全向/2: 与车垂直/3: 与车平行/4: 0/5: 90/6: -90/7: 180.
+	}
+	message Sim_param{
+		int32   enable 		= 1;
+		int32 	type 		= 2;
+		int32   interval 	= 3;
+		sint32  offset		= 4;
+		sint32 	target_area = 5;
+		sint32  target_sta  = 6;
+		string  target		= 7;
+	}
+}
+
+//边
+message Edge{
+	Basic basic 		 = 1;	
+	repeated int32 in_area = 2;
+	sceneData  agv_param = 3;
+	sceneData  avo_param = 4;
+	sceneData  ctl_param = 5;
+	sceneData  rut_param = 6;
+	sceneData  act_param = 7;
+	
+	repeated Coord    control_point  = 8; //控制点
+	repeated Position curve_point    = 9; //拟合点
+	
+	message Basic{
+		int32 	  id 					= 1;
+		int32	  type 		    		= 2;
+		int32	  start_id 	    		= 3;
+		Position  start_pos     		= 4; //起点位姿
+		int32	  end_id 				= 5; 
+		Position  end_pos       		= 6; //终点位姿		
+		int32	  seglen 				= 7; //长度		
+		map<string,string> agv_type	    = 8; //允许通过AGV类型
+		int32     enable       			= 9; //
+		sint32    floor 				= 10;//
+		int32     trans_angle     		= 11; //行驶方向类型  0:相对线段正方向偏移角度；1：世界坐标系角度
+		float     orientation_angle  	= 12; //行驶方向，
+		Arc       arc					= 13;  //弯道相关参数
+		sint32	  bothways 	  			= 14;  //是否是双向路径，1:只有此edge 2:是双向路径  
+		int32     a             		= 15;  //直线参数a
+		int32     b             		= 16;  //直线参数b
+		int32     c             		= 17;  //直线参数c
+		int32     speed_max             = 18;  //最大行驶速度
+		int32     bond_seg_id			= 19;  //绑定的段ID 仅尽管、监控用
+	}
+	message Arc{
+		Coord   cen_pnt     = 1;   //中心点坐标
+		int32	radius      = 2;   //半径
+		sint32  clockdir    = 3;   //时针方向
+	}
+}
+
+//区域
+message Area{
+	Basic basic 			     = 1;	
+	map<string,string> param     = 2;   //参数集
+	repeated Coord vertex_list   = 3; //顶点列表
+	repeated int32   node_in     = 4;//入口点列表
+	map<string,string> agv_num   = 5;   
+	repeated int32   relate_area = 6;//关联区域
+
+	message Basic{
+		int32 	id 			= 1;
+		string	type 		= 2;
+		string 	name 		= 3;
+	}
+}
+//坐标
+message Coord
+{
+	sint32 x			= 1;
+	sint32 y			= 2;
+}
+//位姿
+message Position
+{
+	sint32 x			= 1;
+	sint32 y			= 2;
+	float  angle        = 3;
+}
+
+//段(仅交管、监控使用)
+message Segment{
+	int32 	id 			  = 1;    
+	int32	type 		  = 2;
+	sint32	dir_mode 	  = 3;
+	int32   lock		  = 4;
+	Edge    edge_1        = 5;
+	Edge    edge_2        = 6;
+}
+
+//自定义 描述说明
+message Describe{
+	 
+	//一级参数管理
+	map<string,string> agv_desc = 1; //agv安全防护、行走速度等、旋转限制等配置
+	map<string,string> ctl_desc = 2; //业务相关参数
+	map<string,string> avo_desc = 3; //避让相关参数
+	map<string,string> rut_desc = 4; //路径搜索相关参数
+	
+	//第一个字段string, 就是动作能力集	; 第二个字段dataDesc定义的是某个动作的子动作，比如入库前货叉高度、库位货叉高度,用于任务动作模板配置
+	map<string,dataDesc>   action_desc    = 5; //动作集合(动作名称，动作数据结构)
+	map<string,dataDesc>   area_desc 	  = 6;  //区域相关(区域类型，区域数据结构)
+
+
+	//二级模板管理
+	map<string,ParamTmpl>  param_tmpl   = 7; //参数模板   (模板名称，模板数据结构)
+	map<string,actionTmpl> action_tmpl  = 8; //地图动作模板   (动作名称，动作数据结构)
+	map<string,taskActionTmpl> task_action_tmpl  = 9;//任务动作模板
+	
+/////////////////////////////////////////////////////	
+	
+	//参数描述模板
+	message ParamTmpl{
+		string desc = 1;  //模板描述
+		map<string,string> data  = 2;//参数map描述,(参数名称，参数描述)
+		map<string,paramTmplInstance> param_instance_list = 3; //多个实例化动作模板  (实例化名称，实例化数据结构)
+		
+		
+		//参数模板实例化
+		message paramTmplInstance{
+			string 	describe = 1;//模板实例化描述
+			string  key = 2;
+			map<string,string> param  = 3;    //参数map(参数名称,参数数值)
+		}
+	}
+	
+	//地图动作模板  
+	message actionTmpl{
+		string descibe = 1;  //模板描述
+		repeated action    data = 2; //模板动作序列
+		map<string,actTmplInstance> act_instance_list = 3; //多个实例化动作模板 (实例化名称，实例化数据结构)
+		
+		//动作实例
+		message action{
+			string name = 1;     //动作名称
+			string block_type = 2; //阻塞类型
+			string param = 3;    //map<string,string> param   = 3;  //参数map(参数名称,参数数值)
+		}
+		
+		//动作模板实例化
+		message actTmplInstance{
+			string 	describe        = 1;//描述
+			repeated action  act_list = 2; //动作实例化序列
+		}
+	}
+
+
+	//任务动作模板  
+	message taskActionTmpl{
+
+		string descibe = 1;  //模板描述
+	    string stype 	= 2; //库位类型
+		string gtype 	= 3; //货物类型
+		string agv_type = 4; //AGV类型
+		int32  layer    = 5; //库位层数
+
+		repeated action    data = 6; //模板动作序列
+		map<string,actTmplInstance> act_instance_list = 7; //多个实例化动作模板 (实例化名称，实例化数据结构)
+		
+		//动作实例
+		message action{
+			string action_type = 1; //动作类型
+			string action_name = 2; //子动作名称，从dataDesc的param中选择子动作
+			string block_type = 3; //阻塞类型
+			string param = 4;      //map<string,string> param   = 4;  //参数map(参数名称,参数数值)
+		}
+		
+		//动作模板实例化
+		message actTmplInstance{
+			string describe        = 1;//描述
+			string stype_value     = 2; //库位类型
+			string gtype_value 	   = 3; //货架配置
+			string agv_type_value  = 4; //AGV类型
+			int32  layer_value     = 5; //库位层数
+			
+			repeated action  act_list = 6; //动作实例化序列
+		}
+
+	}
+
+	
+	message dataDesc{
+		string describe = 1;      //动作描述
+		map<string,string> param   = 2; //动作参数列表
+	}
+}
+
+message Store_offset{
+	store_offset_by_layer	layer1 = 1;
+	store_offset_by_layer	layer2 = 2;
+	store_offset_by_layer	layer3 = 3;
+	store_offset_by_layer	layer4 = 4;
+}
+
+message store_offset_by_layer{
+	float high = 1;
+	float horizontal_offset = 2;
+	float vertical_offset	= 3;
+	float fork_high_offset	= 4;
+}
+
+message Label{
+	sint32 id 				= 1;
+	int32  type             = 2;
+	string text 			= 3;
+	Coord  coord            = 4;
+	sint32 size 			= 5;
+	sint32 color_r			= 6;
+	sint32 color_g			= 7;
+	sint32 color_b			= 8;
+	sint32 opacity			= 9;   //透明度0-255,255不透明
+	int32  bold				= 10;  //1加粗
+	int32  italic			= 11;  //1斜体
+	int32  dir 				= 12;  //0:水平 1:垂直
+	sint32 rotate           = 13;  //旋转角度
+}
+
+message AgvParam{
+	string 	agv_subtype 	= 1;   // 设备类型,如， {1, 短腿叉车},{2,长腿叉车},{11,高举升叉车},{21,差速小车},{41,双舵轮重载潜入},{51,差速轮组车型}
+	int32	body_Width 		= 2;   // 车体宽度，单位mm
+	int32	body_Length 	= 3;   // 车体长度，单位mm
+	int32   body_High       = 4;   // 车体高度，单位mm
+	int32   wheel_base      = 5;   // 轴距，单位mm
+	int32   rotate_radius   = 6;   // AGV旋转最小半径，mm
+	
+	int32	p2head 			= 7;   // 上报点到车头距离，单位mm
+	int32	p2tail			= 8;   // 上报点到车尾距离，单位mm
+	int32	p2nav			= 9;   // 上报点到导航仪距离，单位mm
+	
+	sint32	fork_min		= 10;  // 货叉最低高度
+	sint32	fork_max		= 11;  // 货叉最高高度
+	sint32 	fork_noload_high = 13;  // 无货行走货叉高度（可被后车扫到）
+	Coord	id_pos			= 14;  // 车id号显示位置坐标（监控使用）
+	Coord   pallet_pos      = 15;  // 托盘显示位置坐标 （监控使用）
+	
+	repeated opto_elec opto_elec_pos  = 16;	
+
+	//安全防护 map 
+	map<string,Protection> protection = 17;
+	
+	map<int32,Reflector>  reflector = 18;   // key 反光筒id, 层1: 1xxxx
+
+	sint32 	fork_load_high = 19;  // 有货行走货叉高度（可被后车扫到）
+
+
+	message opto_elec
+	{
+		string name =1; //光电名称; 如检货光电: goods_detect_opto   左货叉安全光电： left_fork_opto 右货叉安全光电： right_fork_opto 
+		Position pos =2;//位置
+		int32  signal=3;//信号， -1: 未触发 1: 触发  避免用0;  监控使用，CMS和交管不用
+	}
+}
+
+//此结构与安全防护设计软件协议一致，不改动
+message Protection{
+	int32 	 scan_height    = 1;
+	string 	 dev_type 		= 2;
+	Position pos     		= 3;
+	sint32	 pos_up			= 4;
+	repeated Mode 	mode	= 5;
+
+	message Mode
+	{
+		int32	id			= 1;
+		Polygon	area1		= 2;
+		Polygon	area2		= 3;
+		Polygon	area3		= 4;
+	}
+
+	message Polygon
+	{
+		repeated	Coord	coord	= 1;	
+	}
+}
+
+message ReplaceBatteryStation
+{
+	int32 index				= 1;
+	int32 dist_p1_p2		= 2;	
+	map<int32,Space> space 	= 3;
+	
+	message Space
+	{
+		int32  id   = 1;
+		int32  type = 2;  // 0:充电仓 1:加水仓 2:换电AGV
+		sint32 pos  = 3; 
+	}
+}
+
+message Reflector
+{
+	int32  id				= 1;
+	Coord  coord			= 2;
+	int32  area				= 3;
+	int32  ap_area			= 4;
+}
+
+message Pallet
+{
+	string describe = 1; //托盘描述
+	string name     = 2; //托盘ID   主类型
+	int32  type     = 3; //托盘类型;  1: 田字形标准托盘 2. 川字型标准托盘 3: 标准木托盘 4. 带轮子工装 10.异型托盘
+	int32  length 	= 4;
+	int32  width  	= 5;
+	int32  high     = 6;
+	//int32  pickupHigh = 7; //取托盘时的货叉高度，根据插孔高度确定
+}
+
+message DefautForkSet
+{
+	string agv_type = 1; //agv类型
+	string  pallet_name = 2;//对应的托盘号，0:不关心托盘类型
+	int32  load_high  = 3;//货叉满载行走高度
+	map<int32,int32>  pallet_load_highs = 4; //<托盘号，满载货叉高度>
+}
+//node type
+enum node_type
+{
+   	STA_TYPE_NORMAL   		=  0; //正常站点
+    STA_TYPE_HOUSE 			=  1; //停靠站
+    STA_TYPE_CHARGE   	    =  2; //充电站
+    STA_TYPE_STORAGE   		=  3; //库位(存放货)
+    STA_TYPE_DOOR     		=  4; //卷帘门
+    STA_TYPE_LIFT     		=  5; //电梯类型
+    STA_TYPE_WEIGH   		=  6; //称重点
+	STA_TYPE_HOIST			=  7; //提升机
+}

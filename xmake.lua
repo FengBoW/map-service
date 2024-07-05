@@ -1,0 +1,25 @@
+add_rules("mode.debug", "mode.release")
+set_languages("c++20")
+add_packages("protobuf-cpp")
+--set_warnings("all", "error")
+--add_cxflags("-Wall -Wno-unused-variable -Wno-volatile -Wno-format-truncation")
+--add_cxflags("-Wno-volatile -Wno-format-truncation")
+add_requires("gtest 1.12.1")
+add_cxflags("-Wreturn-type -Werror=return-type -fopenmp")
+target("map_service")
+    -- before_build(function (target)
+    --     os.run("./util/version.sh")
+    -- end)
+    set_kind("binary")
+    set_targetdir("$(curdir)")
+    -- Add Include directories.
+    add_includedirs("proto")
+    -- add_includedirs("yens")
+    add_includedirs("./")
+    add_files("*.cpp")
+    add_files("proto/*.proto", {rules = "protobuf.cpp"})
+    add_links("protobuf")
+    add_syslinks("pthread")
+
+
+

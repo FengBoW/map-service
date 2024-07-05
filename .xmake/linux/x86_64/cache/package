@@ -1,0 +1,26 @@
+{
+    gtest = {
+        links = {
+            "gmock",
+            "gtest"
+        },
+        installdir = "/root/.xmake/packages/g/gtest/v1.12.1/77b9096bc4b34d9282f672d36b015ba9",
+        libfiles = {
+            "/root/.xmake/packages/g/gtest/v1.12.1/77b9096bc4b34d9282f672d36b015ba9/lib/libgmock.a",
+            "/root/.xmake/packages/g/gtest/v1.12.1/77b9096bc4b34d9282f672d36b015ba9/lib/libgtest.a"
+        },
+        __requirestr = "gtest 1.12.1",
+        syslinks = "pthread",
+        static = true,
+        sysincludedirs = "/root/.xmake/packages/g/gtest/v1.12.1/77b9096bc4b34d9282f672d36b015ba9/include",
+        linkdirs = "/root/.xmake/packages/g/gtest/v1.12.1/77b9096bc4b34d9282f672d36b015ba9/lib",
+        __enabled = true,
+        envs = {
+            LD_LIBRARY_PATH = {
+                "/root/.xmake/packages/g/gtest/v1.12.1/77b9096bc4b34d9282f672d36b015ba9/lib"
+            }
+        },
+        license = "BSD-3",
+        version = "v1.12.1"
+    }
+}
